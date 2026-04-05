@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import { getToken, isAdmin, isLoggedIn } from '@/lib/auth';
 import { api } from '@/lib/api';
 
+const API_URL = 'http://localhost:5000/api';
+
 export default function AdminDashboard() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('overview');
@@ -12,7 +14,6 @@ export default function AdminDashboard() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Product form
   const [productForm, setProductForm] = useState({
     product_name: '', brand: '', description: '',
     price: '', stock_quantity: '', image_url: '', category_id: ''
@@ -20,11 +21,13 @@ export default function AdminDashboard() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [formMessage, setFormMessage] = useState('');
 
+  // Image upload states
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
+  const [uploading, setUploading] = useState(false);
+
   useEffect(() => {
-    if (!isLoggedIn() || !isAdmin()) {
-      router.push('/');
-      return;
-    }
+    if (!isLoggedIn() || !isAdmin()) { router.push('/'); return; }
     fetchData();
   }, []);
 
@@ -46,14 +49,11 @@ export default function AdminDashboard() {
     }
   };
 
-  // =================== ORDERS ===================
   const updateOrderStatus = async (orderId, status) => {
     try {
       const token = getToken();
       await api.put(`/orders/${orderId}/status`, { status }, token);
-      setOrders(orders.map(o =>
-        o.order_id === orderId ? { ...o, status } : o
-      ));
+      setOrders(orders.map(o => o.order_id === orderId ? { ...o, status } : o));
     } catch (err) {
       alert('Error updating order status');
     }
@@ -70,17 +70,66 @@ export default function AdminDashboard() {
     return colors[status] || 'bg-gray-100 text-gray-700';
   };
 
-  // =================== PRODUCTS ===================
+  // =================== IMAGE UPLOAD ===================
+  const handleImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const uploadImage = async () => {
+    if (!imageFile) return productForm.image_url;
+    setUploading(true);
+    try {
+      const token = getToken();
+      const formData = new FormData();
+      formData.append('image', imageFile);
+
+      const res = await fetch(`${API_URL}/upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData
+      });
+      const data = await res.json();
+
+      if (data.url) {
+        setProductForm(prev => ({ ...prev, image_url: data.url }));
+        setImageFile(null);
+        return data.url;
+      } else {
+        alert('Upload failed: ' + data.message);
+        return productForm.image_url;
+      }
+    } catch (err) {
+      alert('Image upload failed!');
+      return productForm.image_url;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // =================== PRODUCT FORM ===================
   const handleProductSubmit = async (e) => {
     e.preventDefault();
     setFormMessage('');
+
+    // Image file තිබුණොත් upload කරලා URL ගන්නවා
+    let imageUrl = productForm.image_url;
+    if (imageFile) {
+      imageUrl = await uploadImage();
+    }
+
     try {
       const token = getToken();
+      const submitData = { ...productForm, image_url: imageUrl };
+
       if (editingProduct) {
-        await api.put(`/products/${editingProduct}`, productForm, token);
+        await api.put(`/products/${editingProduct}`, submitData, token);
         setFormMessage('✅ Product updated!');
       } else {
-        await api.post('/products', productForm, token);
+        await api.post('/products', submitData, token);
         setFormMessage('✅ Product added!');
       }
       resetForm();
@@ -101,6 +150,8 @@ export default function AdminDashboard() {
       image_url: product.image_url || '',
       category_id: product.category_id
     });
+    setImagePreview(product.image_url || '');
+    setImageFile(null);
     setActiveTab('add-product');
     window.scrollTo(0, 0);
   };
@@ -118,32 +169,32 @@ export default function AdminDashboard() {
 
   const resetForm = () => {
     setEditingProduct(null);
-    setProductForm({
-      product_name: '', brand: '', description: '',
-      price: '', stock_quantity: '', image_url: '', category_id: ''
-    });
+    setProductForm({ product_name: '', brand: '', description: '', price: '', stock_quantity: '', image_url: '', category_id: '' });
+    setImageFile(null);
+    setImagePreview('');
+    setFormMessage('');
   };
 
-  // =================== STATS ===================
-  const totalRevenue = orders
-    .filter(o => o.status !== 'cancelled')
-    .reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+  const totalRevenue = orders.filter(o => o.status !== 'cancelled').reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
   const pendingOrders = orders.filter(o => o.status === 'pending').length;
 
+  const inputClass = "w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
+  const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1";
+
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center dark:bg-gray-950">
       <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"/>
     </div>
   );
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <div className="max-w-7xl mx-auto px-6 py-8">
 
-        <h1 className="text-3xl font-bold text-gray-800 mb-8">⚙️ Admin Dashboard</h1>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-8">⚙️ Admin Dashboard</h1>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-8 border-b border-gray-200">
+        <div className="flex gap-2 mb-8 border-b border-gray-200 dark:border-gray-700">
           {[
             { id: 'overview', label: '📊 Overview' },
             { id: 'orders', label: '📦 Orders' },
@@ -153,14 +204,14 @@ export default function AdminDashboard() {
             <button
               key={tab.id}
               onClick={() => { setActiveTab(tab.id); if (tab.id !== 'add-product') resetForm(); }}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition ${activeTab === tab.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-800'}`}
+              className={`px-4 py-3 text-sm font-medium border-b-2 transition ${activeTab === tab.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}
             >
               {tab.label}
             </button>
           ))}
         </div>
 
-        {/* =================== OVERVIEW =================== */}
+        {/* OVERVIEW */}
         {activeTab === 'overview' && (
           <div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
@@ -170,28 +221,25 @@ export default function AdminDashboard() {
                 { label: 'Total Products', value: products.length, color: 'text-purple-600' },
                 { label: 'Total Revenue', value: `Rs. ${totalRevenue.toLocaleString()}`, color: 'text-green-600' },
               ].map((stat, i) => (
-                <div key={i} className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-                  <p className="text-sm text-gray-500 mb-1">{stat.label}</p>
+                <div key={i} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-6">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{stat.label}</p>
                   <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
                 </div>
               ))}
             </div>
 
-            {/* Recent Orders */}
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-              <h2 className="text-lg font-bold text-gray-800 mb-4">Recent Orders</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-6">
+              <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4">Recent Orders</h2>
               <div className="space-y-3">
                 {orders.slice(0, 5).map(order => (
-                  <div key={order.order_id} className="flex items-center justify-between py-2 border-b border-gray-50">
+                  <div key={order.order_id} className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-gray-700">
                     <div>
-                      <p className="font-medium text-gray-800">Order #{order.order_id}</p>
-                      <p className="text-sm text-gray-500">{order.name} • {order.email}</p>
+                      <p className="font-medium text-gray-800 dark:text-gray-100">Order #{order.order_id}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{order.name} • {order.email}</p>
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-blue-600">Rs. {parseFloat(order.total_amount).toLocaleString()}</p>
-                      <span className={`text-xs px-2 py-1 rounded-full ${statusColor(order.status)}`}>
-                        {order.status}
-                      </span>
+                      <span className={`text-xs px-2 py-1 rounded-full ${statusColor(order.status)}`}>{order.status}</span>
                     </div>
                   </div>
                 ))}
@@ -200,45 +248,37 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* =================== ORDERS =================== */}
+        {/* ORDERS */}
         {activeTab === 'orders' && (
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-100">
+              <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-100 dark:border-gray-600">
                 <tr>
-                  <th className="text-left px-6 py-3 text-sm font-medium text-gray-600">Order</th>
-                  <th className="text-left px-6 py-3 text-sm font-medium text-gray-600">Customer</th>
-                  <th className="text-left px-6 py-3 text-sm font-medium text-gray-600">Amount</th>
-                  <th className="text-left px-6 py-3 text-sm font-medium text-gray-600">Status</th>
-                  <th className="text-left px-6 py-3 text-sm font-medium text-gray-600">Update</th>
+                  {['Order', 'Customer', 'Amount', 'Status', 'Update'].map(h => (
+                    <th key={h} className="text-left px-6 py-3 text-sm font-medium text-gray-600 dark:text-gray-300">{h}</th>
+                  ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
                 {orders.map(order => (
-                  <tr key={order.order_id} className="hover:bg-gray-50">
+                  <tr key={order.order_id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td className="px-6 py-4">
-                      <p className="font-medium text-gray-800">#{order.order_id}</p>
-                      <p className="text-xs text-gray-400">
-                        {new Date(order.order_date).toLocaleDateString()}
-                      </p>
+                      <p className="font-medium text-gray-800 dark:text-gray-100">#{order.order_id}</p>
+                      <p className="text-xs text-gray-400">{new Date(order.order_date).toLocaleDateString()}</p>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-sm text-gray-800">{order.name}</p>
+                      <p className="text-sm text-gray-800 dark:text-gray-100">{order.name}</p>
                       <p className="text-xs text-gray-400">{order.email}</p>
                     </td>
-                    <td className="px-6 py-4 font-bold text-blue-600">
-                      Rs. {parseFloat(order.total_amount).toLocaleString()}
-                    </td>
+                    <td className="px-6 py-4 font-bold text-blue-600">Rs. {parseFloat(order.total_amount).toLocaleString()}</td>
                     <td className="px-6 py-4">
-                      <span className={`text-xs px-3 py-1 rounded-full font-medium ${statusColor(order.status)}`}>
-                        {order.status}
-                      </span>
+                      <span className={`text-xs px-3 py-1 rounded-full font-medium ${statusColor(order.status)}`}>{order.status}</span>
                     </td>
                     <td className="px-6 py-4">
                       <select
                         value={order.status}
                         onChange={(e) => updateOrderStatus(order.order_id, e.target.value)}
-                        className="border border-gray-200 rounded-lg px-3 py-1 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-1 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
                         {['pending', 'processing', 'shipped', 'delivered', 'cancelled'].map(s => (
                           <option key={s} value={s}>{s}</option>
@@ -252,41 +292,35 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* =================== PRODUCTS =================== */}
+        {/* PRODUCTS */}
         {activeTab === 'products' && (
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-100">
+              <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-100 dark:border-gray-600">
                 <tr>
-                  <th className="text-left px-6 py-3 text-sm font-medium text-gray-600">Product</th>
-                  <th className="text-left px-6 py-3 text-sm font-medium text-gray-600">Category</th>
-                  <th className="text-left px-6 py-3 text-sm font-medium text-gray-600">Price</th>
-                  <th className="text-left px-6 py-3 text-sm font-medium text-gray-600">Stock</th>
-                  <th className="text-left px-6 py-3 text-sm font-medium text-gray-600">Actions</th>
+                  {['Product', 'Category', 'Price', 'Stock', 'Actions'].map(h => (
+                    <th key={h} className="text-left px-6 py-3 text-sm font-medium text-gray-600 dark:text-gray-300">{h}</th>
+                  ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
                 {products.map(product => (
-                  <tr key={product.product_id} className="hover:bg-gray-50">
+                  <tr key={product.product_id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
+                        <div className="w-10 h-10 bg-gray-100 dark:bg-gray-600 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
                           {product.image_url ? (
                             <img src={product.image_url} alt={product.product_name} className="w-full h-full object-cover"/>
-                          ) : (
-                            <span>🖥️</span>
-                          )}
+                          ) : <span>🖥️</span>}
                         </div>
                         <div>
-                          <p className="font-medium text-gray-800 line-clamp-1">{product.product_name}</p>
+                          <p className="font-medium text-gray-800 dark:text-gray-100 line-clamp-1">{product.product_name}</p>
                           <p className="text-xs text-gray-400">{product.brand}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{product.category_name}</td>
-                    <td className="px-6 py-4 font-bold text-blue-600">
-                      Rs. {parseFloat(product.price).toLocaleString()}
-                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{product.category_name}</td>
+                    <td className="px-6 py-4 font-bold text-blue-600">Rs. {parseFloat(product.price).toLocaleString()}</td>
                     <td className="px-6 py-4">
                       <span className={`text-sm font-medium ${product.stock_quantity > 0 ? 'text-green-600' : 'text-red-500'}`}>
                         {product.stock_quantity}
@@ -294,16 +328,10 @@ export default function AdminDashboard() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEditProduct(product)}
-                          className="bg-blue-50 text-blue-600 px-3 py-1 rounded-lg text-sm hover:bg-blue-100 transition"
-                        >
+                        <button onClick={() => handleEditProduct(product)} className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 px-3 py-1 rounded-lg text-sm hover:bg-blue-100 dark:hover:bg-blue-900/50 transition">
                           ✏️ Edit
                         </button>
-                        <button
-                          onClick={() => handleDeleteProduct(product.product_id)}
-                          className="bg-red-50 text-red-500 px-3 py-1 rounded-lg text-sm hover:bg-red-100 transition"
-                        >
+                        <button onClick={() => handleDeleteProduct(product.product_id)} className="bg-red-50 dark:bg-red-900/30 text-red-500 px-3 py-1 rounded-lg text-sm hover:bg-red-100 dark:hover:bg-red-900/50 transition">
                           🗑️ Delete
                         </button>
                       </div>
@@ -315,16 +343,16 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* =================== ADD/EDIT PRODUCT =================== */}
+        {/* ADD/EDIT PRODUCT */}
         {activeTab === 'add-product' && (
           <div className="max-w-2xl">
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-              <h2 className="text-lg font-bold text-gray-800 mb-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-6">
+              <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-6">
                 {editingProduct ? '✏️ Edit Product' : '➕ Add New Product'}
               </h2>
 
               {formMessage && (
-                <div className={`px-4 py-3 rounded-lg mb-4 text-sm ${formMessage.includes('✅') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
+                <div className={`px-4 py-3 rounded-lg mb-4 text-sm ${formMessage.includes('✅') ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'}`}>
                   {formMessage}
                 </div>
               )}
@@ -332,97 +360,97 @@ export default function AdminDashboard() {
               <form onSubmit={handleProductSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
-                    <input
-                      type="text" required
-                      value={productForm.product_name}
-                      onChange={(e) => setProductForm({ ...productForm, product_name: e.target.value })}
-                      className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    <label className={labelClass}>Product Name</label>
+                    <input type="text" required value={productForm.product_name} onChange={(e) => setProductForm({ ...productForm, product_name: e.target.value })} className={inputClass}/>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
-                    <input
-                      type="text"
-                      value={productForm.brand}
-                      onChange={(e) => setProductForm({ ...productForm, brand: e.target.value })}
-                      className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    <label className={labelClass}>Brand</label>
+                    <input type="text" value={productForm.brand} onChange={(e) => setProductForm({ ...productForm, brand: e.target.value })} className={inputClass}/>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                  <textarea
-                    rows={3} required
-                    value={productForm.description}
-                    onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
-                    className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  />
+                  <label className={labelClass}>Description</label>
+                  <textarea rows={3} required value={productForm.description} onChange={(e) => setProductForm({ ...productForm, description: e.target.value })} className={`${inputClass} resize-none`}/>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Price (Rs.)</label>
-                    <input
-                      type="number" required min="0"
-                      value={productForm.price}
-                      onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
-                      className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    <label className={labelClass}>Price (Rs.)</label>
+                    <input type="number" required min="0" value={productForm.price} onChange={(e) => setProductForm({ ...productForm, price: e.target.value })} className={inputClass}/>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Stock</label>
-                    <input
-                      type="number" required min="0"
-                      value={productForm.stock_quantity}
-                      onChange={(e) => setProductForm({ ...productForm, stock_quantity: e.target.value })}
-                      className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    <label className={labelClass}>Stock</label>
+                    <input type="number" required min="0" value={productForm.stock_quantity} onChange={(e) => setProductForm({ ...productForm, stock_quantity: e.target.value })} className={inputClass}/>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                  <select
-                    required
-                    value={productForm.category_id}
-                    onChange={(e) => setProductForm({ ...productForm, category_id: e.target.value })}
-                    className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
+                  <label className={labelClass}>Category</label>
+                  <select required value={productForm.category_id} onChange={(e) => setProductForm({ ...productForm, category_id: e.target.value })} className={inputClass}>
                     <option value="">Select Category</option>
                     {categories.map(cat => (
-                      <option key={cat.category_id} value={cat.category_id}>
-                        {cat.category_name}
-                      </option>
+                      <option key={cat.category_id} value={cat.category_id}>{cat.category_name}</option>
                     ))}
                   </select>
                 </div>
 
+                {/* Image Upload */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
+                  <label className={labelClass}>Product Image</label>
+
+                  {/* Preview */}
+                  {(imagePreview || productForm.image_url) && (
+                    <div className="mb-3">
+                      <img
+                        src={imagePreview || productForm.image_url}
+                        alt="Preview"
+                        className="w-32 h-32 object-cover rounded-lg border border-gray-200 dark:border-gray-600"
+                      />
+                    </div>
+                  )}
+
+                  {/* File Input */}
                   <input
-                    type="text"
-                    value={productForm.image_url}
-                    onChange={(e) => setProductForm({ ...productForm, image_url: e.target.value })}
-                    placeholder="https://example.com/image.jpg"
-                    className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none cursor-pointer"
                   />
+
+                  Upload Button
+                  {imageFile && (
+                    <button
+                      type="button"
+                      onClick={uploadImage}
+                      disabled={uploading}
+                      className="mt-2 bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {uploading ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>
+                          Uploading...
+                        </>
+                      ) : '☁️ Upload to Cloudinary'}
+                    </button>
+                  )}
+
+                  {/* Uploaded Status */}
+                  {productForm.image_url && !imageFile && (
+                    <p className="text-xs text-green-600 dark:text-green-400 mt-1">✅ Image ready</p>
+                  )}
                 </div>
 
                 <div className="flex gap-3 pt-2">
                   <button
                     type="submit"
-                    className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition"
+                    disabled={uploading}
+                    className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50"
                   >
                     {editingProduct ? 'Update Product' : 'Add Product'}
                   </button>
                   {editingProduct && (
-                    <button
-                      type="button"
-                      onClick={() => { resetForm(); setActiveTab('products'); }}
-                      className="flex-1 border border-gray-200 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-50 transition"
-                    >
+                    <button type="button" onClick={() => { resetForm(); setActiveTab('products'); }} className="flex-1 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 py-2 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition">
                       Cancel
                     </button>
                   )}

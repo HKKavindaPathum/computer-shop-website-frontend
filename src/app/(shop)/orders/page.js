@@ -11,10 +11,7 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isLoggedIn()) {
-      router.push('/login');
-      return;
-    }
+    if (!isLoggedIn()) { router.push('/login'); return; }
     fetchOrders();
   }, []);
 
@@ -42,20 +39,20 @@ export default function OrdersPage() {
   };
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center dark:bg-gray-950">
       <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"/>
     </div>
   );
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <div className="max-w-4xl mx-auto px-6 py-10">
-        <h1 className="text-3xl font-bold text-gray-800 mb-8">My Orders</h1>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-8">My Orders</h1>
 
         {orders.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-5xl mb-4">📦</p>
-            <p className="text-lg text-gray-500 mb-6">Orders නෑ</p>
+            <p className="text-lg text-gray-500 dark:text-gray-400 mb-6">Orders නෑ</p>
             <Link href="/products" className="bg-blue-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-blue-700 transition">
               Shop Now
             </Link>
@@ -66,19 +63,17 @@ export default function OrdersPage() {
               <Link
                 key={order.order_id}
                 href={`/orders/${order.order_id}`}
-                className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 flex items-center justify-between hover:shadow-md transition block"
+                className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 flex items-center justify-between hover:shadow-md transition block"
               >
                 <div>
-                  <p className="font-bold text-gray-800 mb-1">Order #{order.order_id}</p>
-                  <p className="text-sm text-gray-500 mb-2">
+                  <p className="font-bold text-gray-800 dark:text-gray-100 mb-1">Order #{order.order_id}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
                     {new Date(order.order_date).toLocaleDateString('si-LK')}
                   </p>
-                  <p className="text-sm text-gray-500">{order.payment_method}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{order.payment_method}</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-blue-600 mb-2">
-                    Rs. {order.total_amount?.toLocaleString()}
-                  </p>
+                  <p className="font-bold text-blue-600 mb-2">Rs. {order.total_amount?.toLocaleString()}</p>
                   <span className={`text-xs px-3 py-1 rounded-full font-medium ${statusColor(order.status)}`}>
                     {order.status}
                   </span>

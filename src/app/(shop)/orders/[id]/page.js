@@ -16,10 +16,7 @@ function OrderDetail() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isLoggedIn()) {
-      router.push('/login');
-      return;
-    }
+    if (!isLoggedIn()) { router.push('/login'); return; }
     fetchOrder();
   }, [id]);
 
@@ -48,37 +45,35 @@ function OrderDetail() {
   };
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center dark:bg-gray-950">
       <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"/>
     </div>
   );
 
   if (!order) return (
-    <div className="min-h-screen flex items-center justify-center text-gray-400">
+    <div className="min-h-screen flex items-center justify-center text-gray-400 dark:bg-gray-950">
       Order not found
     </div>
   );
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <div className="max-w-3xl mx-auto px-6 py-10">
 
         {isSuccess && (
-          <div className="bg-green-50 border border-green-200 rounded-xl p-6 mb-8 text-center">
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6 mb-8 text-center">
             <p className="text-4xl mb-2">🎉</p>
-            <h2 className="text-xl font-bold text-green-700 mb-1">Order Place වුනා!</h2>
-            <p className="text-green-600 text-sm">ඔබගේ order successfully place වුනා!</p>
+            <h2 className="text-xl font-bold text-green-700 dark:text-green-400 mb-1">Order Place වුනා!</h2>
+            <p className="text-green-600 dark:text-green-400 text-sm">ඔබගේ order successfully place වුනා!</p>
           </div>
         )}
 
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 mb-6">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">Order #{order.order_id}</h1>
-              <p className="text-gray-500 text-sm mt-1">
-                {new Date(order.order_date).toLocaleDateString('si-LK', {
-                  year: 'numeric', month: 'long', day: 'numeric'
-                })}
+              <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Order #{order.order_id}</h1>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+                {new Date(order.order_date).toLocaleDateString('si-LK', { year: 'numeric', month: 'long', day: 'numeric' })}
               </p>
             </div>
             <span className={`text-sm px-4 py-2 rounded-full font-medium ${statusColor(order.status)}`}>
@@ -88,32 +83,32 @@ function OrderDetail() {
 
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <p className="text-gray-500 mb-1">Shipping Address</p>
-              <p className="text-gray-800 font-medium">{order.shipping_address}</p>
+              <p className="text-gray-500 dark:text-gray-400 mb-1">Shipping Address</p>
+              <p className="text-gray-800 dark:text-gray-100 font-medium">{order.shipping_address}</p>
             </div>
             <div>
-              <p className="text-gray-500 mb-1">Payment Method</p>
-              <p className="text-gray-800 font-medium capitalize">{order.payment_method}</p>
+              <p className="text-gray-500 dark:text-gray-400 mb-1">Payment Method</p>
+              <p className="text-gray-800 dark:text-gray-100 font-medium capitalize">{order.payment_method}</p>
             </div>
             <div>
-              <p className="text-gray-500 mb-1">Payment Status</p>
+              <p className="text-gray-500 dark:text-gray-400 mb-1">Payment Status</p>
               <p className={`font-medium ${order.payment_status === 'completed' ? 'text-green-600' : 'text-yellow-600'}`}>
                 {order.payment_status}
               </p>
             </div>
             <div>
-              <p className="text-gray-500 mb-1">Total Amount</p>
+              <p className="text-gray-500 dark:text-gray-400 mb-1">Total Amount</p>
               <p className="text-blue-600 font-bold text-lg">Rs. {order.total_amount?.toLocaleString()}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mb-6">
-          <h2 className="text-lg font-bold text-gray-800 mb-4">Order Items</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 mb-6">
+          <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4">Order Items</h2>
           <div className="space-y-4">
             {items.map((item) => (
               <div key={item.order_item_id} className="flex gap-4 items-center">
-                <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
+                <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
                   {item.image_url ? (
                     <img src={item.image_url} alt={item.product_name} className="w-full h-full object-cover"/>
                   ) : (
@@ -121,12 +116,12 @@ function OrderDetail() {
                   )}
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-gray-800">{item.product_name}</p>
-                  <p className="text-sm text-gray-500">{item.brand}</p>
+                  <p className="font-medium text-gray-800 dark:text-gray-100">{item.product_name}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{item.brand}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-gray-500">x{item.quantity}</p>
-                  <p className="font-bold text-gray-800">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">x{item.quantity}</p>
+                  <p className="font-bold text-gray-800 dark:text-gray-100">
                     Rs. {(item.unit_price * item.quantity).toLocaleString()}
                   </p>
                 </div>
@@ -136,7 +131,7 @@ function OrderDetail() {
         </div>
 
         <div className="flex gap-4">
-          <Link href="/orders" className="flex-1 text-center border border-gray-200 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-50 transition">
+          <Link href="/orders" className="flex-1 text-center border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 py-3 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition">
             My Orders
           </Link>
           <Link href="/products" className="flex-1 text-center bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition">
@@ -152,7 +147,7 @@ function OrderDetail() {
 export default function OrderDetailPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center dark:bg-gray-950">
         <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"/>
       </div>
     }>

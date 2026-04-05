@@ -14,7 +14,7 @@ export default function HomePage() {
         api.get('/products'),
         api.get('/categories')
       ]);
-      setProducts(prods.slice(0, 8)); // Latest 8 products
+      setProducts(prods.slice(0, 8));
       setCategories(cats);
       setLoading(false);
     };
@@ -22,7 +22,7 @@ export default function HomePage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-950">
 
       {/* Hero Section */}
       <section className="bg-blue-600 text-white py-20 px-6 text-center">
@@ -40,11 +40,11 @@ export default function HomePage() {
 
       {/* Categories Section */}
       <section className="max-w-6xl mx-auto px-6 py-12">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Categories</h2>
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">Categories</h2>
         {loading ? (
           <div className="flex gap-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-16 w-36 bg-gray-200 rounded-lg animate-pulse"/>
+              <div key={i} className="h-16 w-36 bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse"/>
             ))}
           </div>
         ) : (
@@ -53,7 +53,7 @@ export default function HomePage() {
               <Link
                 key={cat.category_id}
                 href={`/products?category=${cat.category_id}`}
-                className="bg-white border border-gray-200 px-6 py-3 rounded-full text-gray-700 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition font-medium shadow-sm"
+                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-6 py-3 rounded-full text-gray-700 dark:text-gray-200 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition font-medium shadow-sm"
               >
                 {cat.category_name}
               </Link>
@@ -65,7 +65,7 @@ export default function HomePage() {
       {/* Featured Products */}
       <section className="max-w-6xl mx-auto px-6 py-6 pb-16">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">Featured Products</h2>
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Featured Products</h2>
           <Link href="/products" className="text-blue-600 hover:underline font-medium">
             View All →
           </Link>
@@ -74,7 +74,7 @@ export default function HomePage() {
         {loading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="bg-white rounded-xl h-64 animate-pulse"/>
+              <div key={i} className="bg-white dark:bg-gray-800 rounded-xl h-64 animate-pulse"/>
             ))}
           </div>
         ) : (
@@ -83,10 +83,9 @@ export default function HomePage() {
               <Link
                 key={product.product_id}
                 href={`/products/${product.product_id}`}
-                className="bg-white rounded-xl shadow-sm hover:shadow-md transition overflow-hidden border border-gray-100 group"
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition overflow-hidden border border-gray-100 dark:border-gray-700 group"
               >
-                {/* Product Image */}
-                <div className="h-40 bg-gray-100 flex items-center justify-center overflow-hidden">
+                <div className="h-40 bg-gray-100 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
                   {product.image_url ? (
                     <img
                       src={product.image_url}
@@ -97,13 +96,11 @@ export default function HomePage() {
                     <span className="text-4xl">🖥️</span>
                   )}
                 </div>
-
-                {/* Product Info */}
                 <div className="p-4">
                   <p className="text-xs text-blue-600 font-medium mb-1">
                     {product.brand}
                   </p>
-                  <h3 className="text-sm font-semibold text-gray-800 mb-2 line-clamp-2">
+                  <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2 line-clamp-2">
                     {product.product_name}
                   </h3>
                   <p className="text-blue-600 font-bold">

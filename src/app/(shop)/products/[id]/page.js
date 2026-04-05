@@ -24,13 +24,7 @@ export default function ProductDetailPage() {
     const cart = JSON.parse(localStorage.getItem('cart') || '[]');
     const index = cart.findIndex(item => item.productId == product.product_id);
     if (index === -1) {
-      cart.push({
-        productId: product.product_id,
-        name: product.product_name,
-        price: product.price,
-        image: product.image_url,
-        qty: quantity
-      });
+      cart.push({ productId: product.product_id, name: product.product_name, price: product.price, image: product.image_url, qty: quantity });
     } else {
       cart[index].qty += quantity;
     }
@@ -41,40 +35,32 @@ export default function ProductDetailPage() {
   };
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center dark:bg-gray-950">
       <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"/>
     </div>
   );
 
   if (!product) return (
-    <div className="min-h-screen flex items-center justify-center text-gray-400">
+    <div className="min-h-screen flex items-center justify-center text-gray-400 dark:bg-gray-950">
       Product not found
     </div>
   );
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <div className="max-w-5xl mx-auto px-6 py-10">
 
-        {/* Back */}
-        <button
-          onClick={() => router.back()}
-          className="text-sm text-gray-500 hover:text-blue-600 mb-6 flex items-center gap-1"
-        >
+        <button onClick={() => router.back()} className="text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 mb-6 flex items-center gap-1">
           ← Back
         </button>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
           <div className="grid md:grid-cols-2 gap-0">
 
             {/* Image */}
-            <div className="h-80 md:h-full bg-gray-100 flex items-center justify-center">
+            <div className="h-80 md:h-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
               {product.image_url ? (
-                <img
-                  src={product.image_url}
-                  alt={product.product_name}
-                  className="w-full h-full object-cover"
-                />
+                <img src={product.image_url} alt={product.product_name} className="w-full h-full object-cover"/>
               ) : (
                 <span className="text-8xl">🖥️</span>
               )}
@@ -83,51 +69,39 @@ export default function ProductDetailPage() {
             {/* Details */}
             <div className="p-8">
               <p className="text-sm text-blue-600 font-medium mb-2">{product.brand}</p>
-              <h1 className="text-2xl font-bold text-gray-800 mb-2">{product.product_name}</h1>
-              <p className="text-sm text-gray-500 mb-4">{product.category_name}</p>
-              <p className="text-gray-600 mb-6 leading-relaxed">{product.description}</p>
+              <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">{product.product_name}</h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{product.category_name}</p>
+              <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">{product.description}</p>
 
               <p className="text-3xl font-bold text-blue-600 mb-6">
                 Rs. {product.price?.toLocaleString()}
               </p>
 
-              {/* Stock */}
               <p className={`text-sm font-medium mb-6 ${product.stock_quantity > 0 ? 'text-green-600' : 'text-red-500'}`}>
                 {product.stock_quantity > 0 ? `✅ In Stock (${product.stock_quantity})` : '❌ Out of Stock'}
               </p>
 
-              {/* Quantity */}
               {product.stock_quantity > 0 && (
                 <div className="flex items-center gap-4 mb-6">
-                  <span className="text-sm font-medium text-gray-700">Quantity:</span>
-                  <div className="flex items-center border border-gray-200 rounded-lg">
-                    <button
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="px-3 py-2 text-gray-600 hover:text-blue-600"
-                    >
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Quantity:</span>
+                  <div className="flex items-center border border-gray-200 dark:border-gray-600 rounded-lg">
+                    <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-3 py-2 text-gray-600 dark:text-gray-300 hover:text-blue-600">
                       −
                     </button>
-                    <span className="px-4 py-2 font-medium text-gray-800">{quantity}</span>
-                    <button
-                      onClick={() => setQuantity(Math.min(product.stock_quantity, quantity + 1))}
-                      className="px-3 py-2 text-gray-600 hover:text-blue-600"
-                    >
+                    <span className="px-4 py-2 font-medium text-gray-800 dark:text-gray-100">{quantity}</span>
+                    <button onClick={() => setQuantity(Math.min(product.stock_quantity, quantity + 1))} className="px-3 py-2 text-gray-600 dark:text-gray-300 hover:text-blue-600">
                       +
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* Add to Cart Button */}
               {product.stock_quantity > 0 ? (
-                <button
-                  onClick={addToCart}
-                  className={`w-full py-3 rounded-xl font-semibold transition ${added ? 'bg-green-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
-                >
+                <button onClick={addToCart} className={`w-full py-3 rounded-xl font-semibold transition ${added ? 'bg-green-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
                   {added ? '✅ Added to Cart!' : 'Add to Cart'}
                 </button>
               ) : (
-                <button disabled className="w-full bg-gray-200 text-gray-400 py-3 rounded-xl font-semibold cursor-not-allowed">
+                <button disabled className="w-full bg-gray-200 dark:bg-gray-700 text-gray-400 py-3 rounded-xl font-semibold cursor-not-allowed">
                   Out of Stock
                 </button>
               )}
